@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impresor de PDF - 80mm</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f7f6;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        h1 { color: #333; font-size: 1.5rem; }
+
+        .file-input-wrapper {
+            margin: 20px 0;
+            border: 2px dashed #bbb;
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+        }
+
+        .btn-imprimir {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        .btn-imprimir:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Iframe invisible para procesar la impresión */
+        #pdfFrame {
+            display: none;
+        }
+
+        /* Estilos específicos para el momento de imprimir */
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Imprimir PDF (80mm)</h1>
+        <p>Selecciona el archivo de tu pedido:</p>
+        
+        <div class="file-input-wrapper">
+            <input type="file" id="pdfInput" accept="application/pdf">
+        </div>
+
+        <button class="btn-imprimir" id="printBtn" disabled>IMPRIMIR AHORA</button>
+    </div>
+
+    <iframe id="pdfFrame"></iframe>
+
+    <script>
+        const pdfInput = document.getElementById('pdfInput');
+        const printBtn = document.getElementById('printBtn');
+        const pdfFrame = document.getElementById('pdfFrame');
+
+        // Habilitar botón cuando se suba un archivo
+        pdfInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                printBtn.disabled = false;
+            }
+        });
+
+        printBtn.addEventListener('click', function() {
+            const file = pdfInput.files[0];
+            const fileURL = URL.createObjectURL(file);
+
+            // Cargar el PDF en el iframe
+            pdfFrame.src = fileURL;
+
+            // Esperar a que el PDF cargue para ejecutar la impresión
+            pdfFrame.onload = function() {
+                pdfFrame.contentWindow.focus();
+                pdfFrame.contentWindow.print();
+                
+                // Limpiar memoria después de imprimir
+                setTimeout(() => {
+                    URL.revokeObjectURL(fileURL);
+                }, 1000);
+            };
+        });
+    </script>
+</body>
+</html>
