@@ -9,7 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
-
 body{
 background:#f0f0f0;
 font-family:"Courier New", monospace;
@@ -31,9 +30,7 @@ font-size:11px;
 line-height:1.25;
 }
 
-.center{
-text-align:center;
-}
+.center{text-align:center;}
 
 .divider{
 border-top:1px dashed black;
@@ -56,11 +53,6 @@ text-align:right;
 min-width:18mm;
 }
 
-.total{
-font-weight:bold;
-font-size:13px;
-}
-
 button{
 margin-top:10px;
 padding:10px;
@@ -68,13 +60,6 @@ width:100%;
 font-weight:bold;
 cursor:pointer;
 }
-
-.qr{
-display:flex;
-justify-content:center;
-margin-top:10px;
-}
-
 </style>
 </head>
 
@@ -89,12 +74,17 @@ margin-top:10px;
 <button onclick="procesarPDF()">Leer factura</button>
 <button onclick="generarPDF()">Descargar PDF</button>
 <button onclick="imprimirTicket()">Imprimir Ticket</button>
-<button onclick="imprimirBluetooth()">Imprimir Bluetooth</button>
-<button onclick="Android.imprimir('PRUEBA REAL POS')">
-IMPRIMIR PRUEBA
+<button onclick="imprimirBluetooth()">Bluetooth</button>
+
+<!-- 🔥 TEST JS -->
+<button onclick="alert('JS FUNCIONA OK')">
+TEST JAVASCRIPT
 </button>
 
-<br><br>
+<!-- 🔥 ANDROID SEGURO -->
+<button onclick="try{ Android.imprimir('PRUEBA REAL POS'); }catch(e){ alert('ERROR ANDROID: ' + e); }">
+IMPRIMIR ANDROID
+</button>
 
 <div id="ticket" class="ticket"></div>
 
@@ -102,15 +92,18 @@ IMPRIMIR PRUEBA
 
 <script>
 
-let textoBluetooth="";
-let cufe="";
+let textoBluetooth = "";
+let cufe = "";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
 async function procesarPDF(){
 
+try{
+
 const file=document.getElementById("pdfInput").files[0];
+if(!file){ alert("Selecciona un PDF"); return; }
 
 const reader=new FileReader();
 
@@ -125,22 +118,25 @@ let text="";
 for(let i=1;i<=pdf.numPages;i++){
 
 const page=await pdf.getPage(i);
-
 const content=await page.getTextContent();
 
 text+=content.items.map(item=>item.str).join(" ")+" ";
-
 }
 
 extraerDatos(text);
-
 };
 
 reader.readAsArrayBuffer(file);
 
+}catch(e){
+alert("Error PDF: " + e);
+}
+
 }
 
 function extraerDatos(text){
+
+textoBluetooth = ""; // 🔥 reset importante
 
 const factura=text.match(/CV\s*\d+/)?.[0]||"";
 const fecha=text.match(/\d{4}-\d{2}-\d{2}/)?.[0]||"";
@@ -148,19 +144,7 @@ const cliente=text.match(/Cliente\s+(.*?)\s+Nit/i)?.[1]||"";
 const nit=text.match(/Nit\s*\/\s*C\.C\.\s*([\d\.\-]+)/)?.[1]||"";
 const total=text.match(/Total\s+([\d.,]+)/)?.[1]||"";
 
-/* CUFE */
-
 cufe=text.match(/CUFE:\s*([a-f0-9]+)/i)?.[1]||"";
-
-/* impuestos */
-
-const iva19base=text.match(/19\.00%\s+([\d.,]+)/)?.[1]||"";
-const iva19valor=text.match(/19\.00%\s+[\d.,]+\s+([\d.,]+)/)?.[1]||"";
-
-const iva0base=text.match(/0\.00%\s+([\d.,]+)/)?.[1]||"";
-const iva0valor=text.match(/0\.00%\s+[\d.,]+\s+([\d.,]+)/)?.[1]||"";
-
-/* productos */
 
 const regex=/([A-Z\s\+X0-9]{4,40})\s+(\d+\.\d{2})\s+\d+\s?%\s+[\d.,]+\s+([\d.,]+)/g;
 
@@ -176,12 +160,10 @@ productos+=`
 </div>
 `;
 
-textoBluetooth += `${match[1]} (${match[2]})   $${match[3]}\n`;
-
+textoBluetooth += `${match[1]} (${match[2]}) $${match[3]}\n`;
 }
 
 document.getElementById("ticket").innerHTML=`
-
 <div class="center">
 <b>COMESTIBLES LA VILLA S.A.S</b><br>
 NIT 900.755.203-3
@@ -196,90 +178,48 @@ NIT: ${nit}
 
 <div class="divider"></div>
 
-<div class="row">
-<span><b>DESCRIPCIÓN</b></span>
-<span><b>TOTAL</b></span>
-</div>
-
-<div class="divider"></div>
-
 ${productos}
 
 <div class="divider"></div>
 
-<b>Resumen Impuestos</b>
-
-<div class="row">
-<span>19%</span>
-<span>${iva19base}</span>
-<span>${iva19valor}</span>
-</div>
-
-<div class="row">
-<span>0%</span>
-<span>${iva0base}</span>
-<span>${iva0valor}</span>
-</div>
-
-<div class="divider"></div>
-
-<div class="row total">
-<span>TOTAL</span>
-<span>$${total}</span>
-</div>
+<div class="row"><span>TOTAL</span><span>$${total}</span></div>
 
 <div class="divider"></div>
 
 <div class="qr" id="qrcode"></div>
 
-<div class="center">
-CUFE<br>
-${cufe}
-</div>
-
-<div class="divider"></div>
-
-<div class="center">
-¡GRACIAS POR SU COMPRA!
-</div>
+<div class="center">CUFE<br>${cufe}</div>
 
 `;
 
-/* generar QR */
-
+if(cufe){
 new QRCode(document.getElementById("qrcode"),{
 text:"https://catalogo-vpfe.dian.gov.co/document/searchqr?documentKey="+cufe,
 width:120,
 height:120
 });
+}
 
 }
 
 function generarPDF(){
-
 const element=document.getElementById("ticket");
+if(!element){ alert("No hay ticket"); return; }
 
 const alturaPx=element.offsetHeight;
-
 const alturaMM=alturaPx*0.264583;
 
 html2pdf().set({
-
 margin:0,
 filename:"ticket_80mm.pdf",
-
 image:{type:"jpeg",quality:1},
-
 html2canvas:{scale:2},
-
 jsPDF:{
 unit:"mm",
 format:[80,alturaMM],
 orientation:"portrait"
 }
-
 }).from(element).save();
-
 }
 
 function imprimirTicket(){
@@ -296,23 +236,18 @@ optionalServices:[0xFFE0]
 });
 
 const server = await device.gatt.connect();
-
 const service = await server.getPrimaryService(0xFFE0);
-
 const characteristic = await service.getCharacteristic(0xFFE1);
 
 let encoder = new TextEncoder();
-
 let data = encoder.encode(textoBluetooth);
 
 await characteristic.writeValue(data);
 
-alert("Ticket enviado a impresora Bluetooth");
+alert("Ticket enviado OK");
 
 }catch(error){
-
-alert("Error Bluetooth: "+error);
-
+alert("Bluetooth error: "+error);
 }
 
 }
