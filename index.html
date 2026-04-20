@@ -90,8 +90,8 @@ margin-top:10px;
 <button onclick="generarPDF()">Descargar PDF</button>
 <button onclick="imprimirTicket()">Imprimir Ticket</button>
 <button onclick="imprimirBluetooth()">Imprimir Bluetooth</button>
-<button onclick="alert(typeof Android)">
-TEST ANDROID TYPE
+<button onclick="Android.imprimir('PRUEBA REAL POS')">
+IMPRIMIR PRUEBA
 </button>
 
 <br><br>
@@ -316,7 +316,7 @@ alert("Error Bluetooth: "+error);
 }
 
 }
-
+Android.imprimir("PRUEBA")
 </script>
 
 </body>
